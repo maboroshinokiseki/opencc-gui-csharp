@@ -5,7 +5,9 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,11 +15,14 @@ namespace OpenCC_GUI
 {
     public partial class Form_Main : Form
     {
-        private static int spaceBetweenBoxes;
-        private static int margin;
-        private static CurrentWindow currentWindow = CurrentWindow.Text;
+        private int spaceBetweenBoxes;
+        private int margin;
+        private string configFileName;
+        private CurrentMode currentMode = CurrentMode.Text;
 
-        private enum CurrentWindow
+        private BindingList<FileListItem> fileListItems;
+
+        private enum CurrentMode
         {
             Text,
             FileList
@@ -29,68 +34,7 @@ namespace OpenCC_GUI
             int halfWindowControlWidth = this.ClientSize.Width / 2 - spaceBetweenBoxes / 2 - margin;
             comboBox_Config.Width = halfWindowControlWidth < 200 ? 200 : halfWindowControlWidth;
         }
-
-        private void PutFileContentToTextBox(string fileName)
-        {
-            textBox_Content.Text = System.IO.File.ReadAllText(fileName);
-        }
-
-        private void PutFileNamesToListView(string[] fileNames)
-        {
-            foreach (var fileName in fileNames)
-            {
-                listView_Files.Items.Add(fileName).SubItems.Add("");
-            }
-        }
         
-        private void ConvertAndStoreFilesInListView(string outputFolder = null)
-        {
-            IProgress<Reportinfo> progress = new Progress<Reportinfo>(info =>
-            {
-                if (info.finishied)
-                {
-                    listView_Files.Items.Remove(info.item);
-                }
-                else
-                {
-                    info.item.SubItems[1].Text = info.message;
-                }
-            });
-
-            string configFileName = ((TextValuePair)comboBox_Config.SelectedItem).Value;
-
-            Parallel.ForEach(listView_Files.Items.Cast<ListViewItem>(), (item) =>
-            {
-                try
-                {
-                    string content = System.IO.File.ReadAllText(item.Text);
-                    string result = Converter.Convert(content, configFileName);
-                    if (result != null)
-                    {
-                        string outputPath;
-                        if (outputFolder == null)
-                        {
-                            outputPath = item.Text;
-                        }
-                        else
-                        {
-                            outputPath = outputFolder + "\\" + System.IO.Path.GetFileName(item.Text);
-                        }
-                        System.IO.File.WriteAllText(outputPath, result, Encoding.UTF8);
-                        progress.Report(new Reportinfo { finishied = true, item = item });
-                    }
-                    else
-                    {
-                        progress.Report(new Reportinfo { finishied = false, item = item , message = "OpenCC Unknown Error!" });
-                    }
-                }
-                catch (Exception exception)
-                {
-                    progress.Report(new Reportinfo { finishied = false, item = item, message = exception.Message });
-                }
-            });
-        }
-
         public Form_Main()
         {
             this.InitializeComponent();
@@ -120,22 +64,24 @@ namespace OpenCC_GUI
             spaceBetweenBoxes = button_Convert.Left - (comboBox_Config.Left + comboBox_Config.Width);
             margin = comboBox_Config.Left;
 
+            fileListItems = FileListUtility.CreateNewBindingList();
+            dataGridView_FileList.DataSource = FileListUtility.CreateNewBindingSource(fileListItems);
             this.ResizeControls();
         }
-
-        private async void button_Convert_Click(object sender, EventArgs e)
+        
+        private void button_Convert_Click(object sender, EventArgs e)
         {
-            switch (currentWindow)
+            switch (currentMode)
             {
-                case CurrentWindow.Text:
-                    string result = await Task.Run(() => Converter.Convert(textBox_Content.Text, ((TextValuePair)comboBox_Config.SelectedItem).Value));
+                case CurrentMode.Text:
+                    string result = Converter.Convert(textBox_Content.Text, configFileName);
                     if (result != null)
                     {
                         textBox_Content.Text = result;
                     }
                     break;
-                case CurrentWindow.FileList:
-                    ConvertAndStoreFilesInListView();
+                case CurrentMode.FileList:
+                    FileListUtility.ConvertAndStoreFilesInList(fileListItems, configFileName);
                     break;
             }
         }
@@ -150,12 +96,13 @@ namespace OpenCC_GUI
             OpenFileDialog fileBrowser = new OpenFileDialog();
             fileBrowser.Multiselect = true;
             fileBrowser.ShowDialog();
-            PutFileNamesToListView(fileBrowser.FileNames);
+            FileListUtility.AppendFileList(fileListItems, fileBrowser.FileNames);
         }
 
         private void button_Clear_Click(object sender, EventArgs e)
         {
-            listView_Files.Items.Clear();
+            fileListItems = FileListUtility.CreateNewBindingList();
+            dataGridView_FileList.DataSource = FileListUtility.CreateNewBindingSource(fileListItems);
         }
 
         private void Form_Main_DragEnter(object sender, DragEventArgs e)
@@ -169,22 +116,17 @@ namespace OpenCC_GUI
         private void Form_Main_DragDrop(object sender, DragEventArgs e)
         {
             string[] fileNames = (string[])e.Data.GetData(DataFormats.FileDrop, false);
-            switch (currentWindow)
+            switch (currentMode)
             {
-                case CurrentWindow.Text:
-                    PutFileContentToTextBox(fileNames[0]);
+                case CurrentMode.Text:
+                    TextUtility.LoadTextToTextBox(textBox_Content, fileNames[0]);
                     break;
-                case CurrentWindow.FileList:
-                    PutFileNamesToListView(fileNames);
+                case CurrentMode.FileList:
+                    FileListUtility.AppendFileList(fileListItems, fileNames);
                     break;
             }
         }
-
-        private void listView_Files_Resize(object sender, EventArgs e)
-        {
-            listView_Files.Columns[0].Width = listView_Files.Columns[1].Width = listView_Files.Width / 2 - SystemInformation.VerticalScrollBarWidth;
-        }
-
+       
         private class TextValuePair
         {
             public string Text;
@@ -201,12 +143,10 @@ namespace OpenCC_GUI
                 return this.Text;
             }
         }
-
-        private class Reportinfo
+        
+        private void comboBox_Config_SelectedIndexChanged(object sender, EventArgs e)
         {
-            public bool finishied;
-            public string message;
-            public ListViewItem item;
+            configFileName = ((TextValuePair)comboBox_Config.SelectedItem).Value;
         }
     }
 }

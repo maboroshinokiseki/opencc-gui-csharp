@@ -12,56 +12,56 @@ namespace OpenCC_GUI
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog fileBrowser = new OpenFileDialog();
-            switch (currentWindow)
+            switch (currentMode)
             {
-                case CurrentWindow.Text:
+                case CurrentMode.Text:
                     fileBrowser.Multiselect = false;
                     break;
-                case CurrentWindow.FileList:
+                case CurrentMode.FileList:
                     fileBrowser.Multiselect = true;
                     break;
             }
             fileBrowser.ShowDialog();
-            switch (currentWindow)
+            switch (currentMode)
             {
-                case CurrentWindow.Text:
-                    PutFileContentToTextBox(fileBrowser.FileName);
+                case CurrentMode.Text:
+                    TextUtility.LoadTextToTextBox(textBox_Content, fileBrowser.FileName);
                     break;
-                case CurrentWindow.FileList:
-                    PutFileNamesToListView(fileBrowser.FileNames);
+                case CurrentMode.FileList:
+                    FileListUtility.AppendFileList(fileListItems, fileBrowser.FileNames);
                     break;
             }
         }
 
-        private async void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog fileBrowser = new OpenFileDialog();
             FolderBrowserDialog folderBrowser = new FolderBrowserDialog();
             DialogResult dialogResult = DialogResult.None;
 
-            switch (currentWindow)
+            switch (currentMode)
             {
-                case CurrentWindow.Text:
+                case CurrentMode.Text:
                     dialogResult = fileBrowser.ShowDialog();
                     break;
-                case CurrentWindow.FileList:
+                case CurrentMode.FileList:
                     dialogResult = folderBrowser.ShowDialog();
                     break;
             }
 
             if (dialogResult == DialogResult.OK)
             {
-                switch (currentWindow)
+                switch (currentMode)
                 {
-                    case CurrentWindow.Text:
-                        string result = await Task.Run(() => Converter.Convert(textBox_Content.Text, ((TextValuePair)comboBox_Config.SelectedItem).Value));
+                    case CurrentMode.Text:
+                        string result = Converter.Convert(textBox_Content.Text, configFileName);
                         if (result != null)
                         {
                             System.IO.File.WriteAllText(fileBrowser.FileName, result, Encoding.UTF8);
                         }
                         break;
-                    case CurrentWindow.FileList:
-                        ConvertAndStoreFilesInListView(folderBrowser.SelectedPath);
+                    case CurrentMode.FileList:
+                        FileListUtility.ConvertAndStoreFilesInList(fileListItems, configFileName, folderBrowser.SelectedPath);
                         break;
                 }
             }
@@ -70,19 +70,19 @@ namespace OpenCC_GUI
         private void convertTextToolStripMenuItem_Click(object sender, EventArgs e)
         {
             textBox_Content.Visible = true;
-            listView_Files.Visible = false;
+            dataGridView_FileList.Visible = false;
             button_Select.Visible = false;
             button_Clear.Visible = false;
-            currentWindow = CurrentWindow.Text;
+            currentMode = CurrentMode.Text;
         }
 
         private void convertFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             textBox_Content.Visible = false;
-            listView_Files.Visible = true;
+            dataGridView_FileList.Visible = true;
             button_Select.Visible = true;
             button_Clear.Visible = true;
-            currentWindow = CurrentWindow.FileList;
+            currentMode = CurrentMode.FileList;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
