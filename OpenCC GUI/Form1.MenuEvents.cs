@@ -21,6 +21,7 @@ namespace OpenCC_GUI
                     fileBrowser.Multiselect = true;
                     break;
             }
+
             fileBrowser.ShowDialog();
             switch (currentMode)
             {
@@ -55,11 +56,9 @@ namespace OpenCC_GUI
                 {
                     case CurrentMode.Text:
                         string result = Converter.Convert(textBox_Content.Text, configFileName);
-                        if (result != null)
-                        {
-                            System.IO.File.WriteAllText(fileBrowser.FileName, result, Encoding.UTF8);
-                        }
+                        System.IO.File.WriteAllText(fileBrowser.FileName, result, Encoding.UTF8);
                         break;
+
                     case CurrentMode.FileList:
                         FileListUtility.ConvertAndStoreFilesInList(fileListItems, configFileName, folderBrowser.SelectedPath);
                         break;

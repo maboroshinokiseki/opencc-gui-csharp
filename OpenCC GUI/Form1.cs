@@ -22,6 +22,11 @@ namespace OpenCC_GUI
 
         private BindingList<FileListItem> fileListItems;
 
+        public Form_Main()
+        {
+            this.InitializeComponent();
+        }
+
         private enum CurrentMode
         {
             Text,
@@ -31,13 +36,8 @@ namespace OpenCC_GUI
         private void ResizeControls()
         {
             // I can't find a better way to limit the minimum size of a cell.
-            int halfWindowControlWidth = this.ClientSize.Width / 2 - spaceBetweenBoxes / 2 - margin;
+            int halfWindowControlWidth = (this.ClientSize.Width / 2) - (this.spaceBetweenBoxes / 2) - this.margin;
             comboBox_Config.Width = halfWindowControlWidth < 200 ? 200 : halfWindowControlWidth;
-        }
-        
-        public Form_Main()
-        {
-            this.InitializeComponent();
         }
 
         private void Form_Main_Load(object sender, EventArgs e)
@@ -68,17 +68,21 @@ namespace OpenCC_GUI
             dataGridView_FileList.DataSource = FileListUtility.CreateNewBindingSource(fileListItems);
             this.ResizeControls();
         }
-        
+
         private void button_Convert_Click(object sender, EventArgs e)
         {
             switch (currentMode)
             {
                 case CurrentMode.Text:
-                    string result = Converter.Convert(textBox_Content.Text, configFileName);
-                    if (result != null)
+                    try
                     {
-                        textBox_Content.Text = result;
+                        textBox_Content.Text = Converter.Convert(textBox_Content.Text, configFileName);
                     }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show(exception.Message);
+                    }
+
                     break;
                 case CurrentMode.FileList:
                     FileListUtility.ConvertAndStoreFilesInList(fileListItems, configFileName);
@@ -108,9 +112,13 @@ namespace OpenCC_GUI
         private void Form_Main_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
                 e.Effect = DragDropEffects.All;
+            }
             else
+            {
                 e.Effect = DragDropEffects.None;
+            }
         }
 
         private void Form_Main_DragDrop(object sender, DragEventArgs e)
@@ -126,7 +134,12 @@ namespace OpenCC_GUI
                     break;
             }
         }
-       
+
+        private void comboBox_Config_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            configFileName = ((TextValuePair)comboBox_Config.SelectedItem).Value;
+        }
+
         private class TextValuePair
         {
             public string Text;
@@ -142,11 +155,6 @@ namespace OpenCC_GUI
             {
                 return this.Text;
             }
-        }
-        
-        private void comboBox_Config_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            configFileName = ((TextValuePair)comboBox_Config.SelectedItem).Value;
         }
     }
 }

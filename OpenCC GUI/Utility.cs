@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace OpenCC_GUI
 {
-    static class FileListUtility
+    internal static class FileListUtility
     {
-        private static readonly int maxTask;
+        private static readonly int MaxTask;
         private static int runningThread;
         private static IProgress<Reportinfo> progress;
 
@@ -20,31 +20,31 @@ namespace OpenCC_GUI
         {
             progress = new Progress<Reportinfo>(info =>
             {
-                if (info.finishied)
+                if (info.Finishied)
                 {
-                    info.fileListItems.Remove(info.item);
+                    info.FileListItems.Remove(info.Item);
                 }
                 else
                 {
-                    info.item.ErrorMessage = info.message;
+                    info.Item.ErrorMessage = info.Message;
                 }
             });
 
-            maxTask = Environment.ProcessorCount - 2;
-            if (maxTask < 1)
+            MaxTask = Environment.ProcessorCount - 2;
+            if (MaxTask < 1)
             {
-                maxTask = 1;
+                MaxTask = 1;
             }
         }
-        
+
         public static void AppendFileList(BindingList<FileListItem> list, string[] fileNames)
         {
             foreach (var fileName in fileNames)
             {
-                list.Add(new FileListItem() { FileName = fileName});
+                list.Add(new FileListItem() { FileName = fileName });
             }
         }
-        
+
         public static BindingList<FileListItem> CreateNewBindingList()
         {
             BindingList<FileListItem> fileListItems = new BindingList<FileListItem>();
@@ -58,53 +58,16 @@ namespace OpenCC_GUI
             return bindingSource;
         }
 
-        private static void ConvertTask(BindingList<FileListItem> fileListItems, FileListItem item, string configFileName, string outputFolder, SemaphoreSlim semaphore)
-        {
-            semaphore.Wait();
-            try
-            {
-                string content = System.IO.File.ReadAllText(item.FileName);
-                string result = Converter.Convert(content, configFileName);
-                if (result != null)
-                {
-                    string outputPath;
-                    if (outputFolder == null)
-                    {
-                        outputPath = item.FileName;
-                    }
-                    else
-                    {
-                        outputPath = outputFolder + "\\" + System.IO.Path.GetFileName(item.FileName);
-                    }
-                    System.IO.File.WriteAllText(outputPath, result, Encoding.UTF8);
-
-                    progress.Report(new Reportinfo { fileListItems = fileListItems, finishied = true, item = item });
-                }
-                else
-                {
-                    throw new Exception("OpenCC Unknown Error!");
-                }
-            }
-            catch (Exception exception)
-            {
-                progress.Report(new Reportinfo { fileListItems = fileListItems, finishied = false, item = item, message = exception.Message });
-            }
-            finally
-            {
-                semaphore.Release();
-                Interlocked.Decrement(ref runningThread);
-            }
-        }
-
         public static void ConvertAndStoreFilesInList(BindingList<FileListItem> fileListItems, string configFileName, string outputFolder = null)
         {
             if (runningThread != 0)
             {
                 return;
             }
+
             runningThread = fileListItems.Count;
 
-            SemaphoreSlim semaphore = new SemaphoreSlim(maxTask, maxTask);
+            SemaphoreSlim semaphore = new SemaphoreSlim(MaxTask, MaxTask);
             var fileListItemsClone = new FileListItem[fileListItems.Count];
             fileListItems.CopyTo(fileListItemsClone, 0);
 
@@ -114,45 +77,76 @@ namespace OpenCC_GUI
             }
         }
 
+        private static void ConvertTask(BindingList<FileListItem> fileListItems, FileListItem item, string configFileName, string outputFolder, SemaphoreSlim semaphore)
+        {
+            semaphore.Wait();
+            try
+            {
+                string content = System.IO.File.ReadAllText(item.FileName);
+                string result = Converter.Convert(content, configFileName);
+                string outputPath;
+                if (outputFolder == null)
+                {
+                    outputPath = item.FileName;
+                }
+                else
+                {
+                    outputPath = outputFolder + "\\" + System.IO.Path.GetFileName(item.FileName);
+                }
+
+                System.IO.File.WriteAllText(outputPath, result, Encoding.UTF8);
+
+                progress.Report(new Reportinfo { FileListItems = fileListItems, Finishied = true, Item = item });
+            }
+            catch (Exception exception)
+            {
+                progress.Report(new Reportinfo { FileListItems = fileListItems, Finishied = false, Item = item, Message = exception.Message });
+            }
+            finally
+            {
+                semaphore.Release();
+                Interlocked.Decrement(ref runningThread);
+            }
+        }
+
         private class Reportinfo
         {
-            public BindingList<FileListItem> fileListItems;
-            public bool finishied;
-            public FileListItem item;
-            public string message;
+            public BindingList<FileListItem> FileListItems;
+            public bool Finishied;
+            public FileListItem Item;
+            public string Message;
         }
     }
 
-    class FileListItem : INotifyPropertyChanged
+    internal class FileListItem : INotifyPropertyChanged
     {
         private string fileName;
+        private string errorMessage;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public string FileName
         {
-            get => fileName;
+            get => this.fileName;
             set
             {
-                fileName = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(""));
+                this.fileName = value;
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
             }
         }
-
-        private string errorMessage;
-
+        
         public string ErrorMessage
         {
-            get => errorMessage;
+            get => this.errorMessage;
             set
             {
-                errorMessage = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(""));
+                this.errorMessage = value;
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
             }
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
     }
 
-    static class TextUtility
+    internal static class TextUtility
     {
         public static void LoadTextToTextBox(TextBox textBox, string fileName)
         {
