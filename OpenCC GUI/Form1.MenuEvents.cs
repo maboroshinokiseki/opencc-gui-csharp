@@ -55,8 +55,16 @@ namespace OpenCC_GUI
                 switch (currentMode)
                 {
                     case CurrentMode.Text:
-                        string result = Converter.Convert(textBox_Content.Text, configFileName);
-                        System.IO.File.WriteAllText(fileBrowser.FileName, result, Encoding.UTF8);
+                        try
+                        {
+                            string result = Converter.Convert(textBox_Content.Text, configFileName);
+                            System.IO.File.WriteAllText(fileBrowser.FileName, result, Encoding.UTF8);
+                        }
+                        catch (Exception exception)
+                        {
+                            MessageBox.Show(exception.Message);
+                        }
+
                         break;
 
                     case CurrentMode.FileList:
