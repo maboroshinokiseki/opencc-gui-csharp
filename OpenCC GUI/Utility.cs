@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace OpenCC_GUI
+﻿namespace OpenCC_GUI
 {
+    using System;
+    using System.ComponentModel;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using System.Windows.Forms;
+
     internal static class FileListUtility
     {
         private static readonly int MaxTask;
@@ -134,7 +131,7 @@ namespace OpenCC_GUI
                 this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
             }
         }
-        
+
         public string ErrorMessage
         {
             get => this.errorMessage;

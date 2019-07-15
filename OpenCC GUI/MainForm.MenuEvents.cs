@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace OpenCC_GUI
+﻿namespace OpenCC_GUI
 {
+    using System;
+    using System.Text;
+    using System.Windows.Forms;
+
     public partial class Form_Main : Form
     {
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)

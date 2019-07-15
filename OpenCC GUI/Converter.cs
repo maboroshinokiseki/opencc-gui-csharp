@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OpenCC_GUI
+﻿namespace OpenCC_GUI
 {
+    using System;
+    using System.Runtime.InteropServices;
+    using System.Text;
+
     public static class Converter
     {
         /// <summary>
@@ -50,11 +47,7 @@ namespace OpenCC_GUI
 
         private static string StringFromNativeUtf8(IntPtr nativeUtf8)
         {
-            int len = 0;
-            while (Marshal.ReadByte(nativeUtf8, len) != 0)
-            {
-                ++len;
-            }
+            int len = String.Strlen(nativeUtf8);
 
             byte[] buffer = new byte[len];
             Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
@@ -76,7 +69,7 @@ namespace OpenCC_GUI
         /// </summary>
         /// <param name="configFileName">Location of configuration file. If this is set to NULL, OPENCC_DEFAULT_CONFIG_SIMP_TO_TRAD will be loaded.</param>
         /// <returns>A description pointer of the newly allocated instance of opencc. On error the return value will be (opencc_t) -1.</returns>
-        [DllImport("opencc.dll")]
+        [DllImport("libopencc")]
         private static extern IntPtr opencc_open(string configFileName);
 
         /// <summary>
@@ -87,14 +80,14 @@ namespace OpenCC_GUI
         /// <param name="input">The UTF-8 encoded string.</param>
         /// <param name="length">The maximum length in byte to convert. If length is (size_t)-1, the whole string (terminated by '\0') will be converted.</param>
         /// <returns>The newly allocated UTF-8 string that stores text converted, or NULL on error.</returns>
-        [DllImport("opencc.dll")]
+        [DllImport("libopencc")]
         private static extern IntPtr opencc_convert_utf8(IntPtr opencc, byte[] input, UIntPtr length);
 
         /// <summary>
         /// Releases allocated buffer by opencc_convert_utf8.
         /// </summary>
         /// <param name="str">Pointer to the allocated string buffer by opencc_convert_utf8.</param>
-        [DllImport("opencc.dll")]
+        [DllImport("libopencc")]
         private static extern void opencc_convert_utf8_free(IntPtr str);
 
         /// <summary>
@@ -102,7 +95,7 @@ namespace OpenCC_GUI
         /// </summary>
         /// <param name="opencc">The description pointer.</param>
         /// <returns>0 on success or non-zero number on failure.</returns>
-        [DllImport("opencc.dll")]
+        [DllImport("libopencc")]
         private static extern int opencc_close(IntPtr opencc);
 
         /// <summary>
@@ -110,7 +103,7 @@ namespace OpenCC_GUI
         /// Note that this function is the only one which is NOT thread-safe.
         /// </summary>
         /// <returns>Error message</returns>
-        [DllImport("opencc.dll")]
+        [DllImport("libopencc")]
         private static extern IntPtr opencc_error();
     }
 }
