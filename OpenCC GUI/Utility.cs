@@ -1,6 +1,7 @@
 ﻿namespace OpenCC_GUI
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Text;
     using System.Threading;
@@ -10,7 +11,7 @@
     internal static class FileListUtility
     {
         private static readonly int MaxTask;
-        private static int runningThread;
+        private static bool isRunning = false;
         private static IProgress<Reportinfo> progress;
 
         static FileListUtility()
@@ -42,41 +43,40 @@
             }
         }
 
-        public static BindingList<FileListItem> CreateNewBindingList()
+        public static async void ConvertAndStoreFilesInList(BindingList<FileListItem> fileListItems, string configFileName, string outputFolder = null)
         {
-            BindingList<FileListItem> fileListItems = new BindingList<FileListItem>();
-            return fileListItems;
-        }
-
-        public static BindingSource CreateNewBindingSource(BindingList<FileListItem> fileListItems)
-        {
-            BindingSource bindingSource = new BindingSource();
-            bindingSource.DataSource = fileListItems;
-            return bindingSource;
-        }
-
-        public static void ConvertAndStoreFilesInList(BindingList<FileListItem> fileListItems, string configFileName, string outputFolder = null)
-        {
-            if (runningThread != 0)
+            if (isRunning)
             {
                 return;
             }
+            isRunning = true;
 
-            runningThread = fileListItems.Count;
-
-            SemaphoreSlim semaphore = new SemaphoreSlim(MaxTask, MaxTask);
-            var fileListItemsClone = new FileListItem[fileListItems.Count];
-            fileListItems.CopyTo(fileListItemsClone, 0);
-
-            foreach (var item in fileListItemsClone)
+            while (fileListItems.Count != 0)
             {
-                Task.Run(() => ConvertTask(fileListItems, item, configFileName, outputFolder, semaphore));
+                SemaphoreSlim semaphore = new SemaphoreSlim(MaxTask, MaxTask);
+                var fileListItemsClone = new FileListItem[fileListItems.Count];
+                fileListItems.CopyTo(fileListItemsClone, 0);
+                var tasks = new List<Task>(fileListItemsClone.Length);
+
+                foreach (var item in fileListItemsClone)
+                {
+                    tasks.Add(Task.Run(() => ConvertTask(fileListItems, item, configFileName, outputFolder, semaphore)));
+                }
+                await Task.WhenAll(tasks);
             }
+
+            isRunning = false;
         }
 
         private static void ConvertTask(BindingList<FileListItem> fileListItems, FileListItem item, string configFileName, string outputFolder, SemaphoreSlim semaphore)
         {
             semaphore.Wait();
+            if (!fileListItems.Contains(item))
+            {
+                semaphore.Release();
+                return;
+            }
+
             try
             {
                 string content = System.IO.File.ReadAllText(item.FileName);
@@ -102,7 +102,6 @@
             finally
             {
                 semaphore.Release();
-                Interlocked.Decrement(ref runningThread);
             }
         }
 
@@ -112,34 +111,6 @@
             public bool Finishied;
             public FileListItem Item;
             public string Message;
-        }
-    }
-
-    internal class FileListItem : INotifyPropertyChanged
-    {
-        private string fileName;
-        private string errorMessage;
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public string FileName
-        {
-            get => this.fileName;
-            set
-            {
-                this.fileName = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
-            }
-        }
-
-        public string ErrorMessage
-        {
-            get => this.errorMessage;
-            set
-            {
-                this.errorMessage = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
-            }
         }
     }
 

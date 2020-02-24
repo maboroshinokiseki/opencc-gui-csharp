@@ -64,8 +64,8 @@ namespace OpenCC_GUI
             spaceBetweenBoxes = button_Convert.Left - (comboBox_Config.Left + comboBox_Config.Width);
             margin = comboBox_Config.Left;
 
-            fileListItems = FileListUtility.CreateNewBindingList();
-            dataGridView_FileList.DataSource = FileListUtility.CreateNewBindingSource(fileListItems);
+            fileListItems = new BindingList<FileListItem>();
+            dataGridView_FileList.DataSource = fileListItems;
             this.ResizeControls();
         }
 
@@ -105,8 +105,7 @@ namespace OpenCC_GUI
 
         private void button_Clear_Click(object sender, EventArgs e)
         {
-            fileListItems = FileListUtility.CreateNewBindingList();
-            dataGridView_FileList.DataSource = FileListUtility.CreateNewBindingSource(fileListItems);
+            fileListItems.Clear();
         }
 
         private void Form_Main_DragEnter(object sender, DragEventArgs e)
