@@ -37,10 +37,13 @@
 
         public static void AppendFileList(BindingList<FileListItem> list, string[] fileNames)
         {
+            list.RaiseListChangedEvents = false;
             foreach (var fileName in fileNames)
             {
                 list.Add(new FileListItem() { FileName = fileName });
             }
+            list.RaiseListChangedEvents = true;
+            list.ResetBindings();
         }
 
         public static async void ConvertAndStoreFilesInList(BindingList<FileListItem> fileListItems, string configFileName, string outputFolder = null)
