@@ -1,14 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace OpenCC_GUI
@@ -25,6 +16,8 @@ namespace OpenCC_GUI
         public Form_Main()
         {
             this.InitializeComponent();
+            fileListItems = new BindingList<FileListItem>();
+            dataGridView_FileList.DataSource = fileListItems;
         }
 
         private enum CurrentMode
@@ -42,31 +35,16 @@ namespace OpenCC_GUI
 
         private void Form_Main_Load(object sender, EventArgs e)
         {
-            TextValuePair[] configs = new TextValuePair[]
-            {
-                new TextValuePair("Simplified to Traditional", "s2t.json"),
-                new TextValuePair("Traditional to Simplified", "t2s.json"),
-                new TextValuePair("Simplified to Hong Kong", "s2hk.json"),
-                new TextValuePair("Simplified to Taiwan", "s2tw.json"),
-                new TextValuePair("Simplified to Taiwan with Taiwanese idiom", "s2twp.json"),
-                new TextValuePair("Hong Kong to Simplified", "hk2s.json"),
-                new TextValuePair("Taiwan to Simplified", "tw2s.json"),
-                new TextValuePair("Taiwan to Simplified with Mainland idiom", "tw2sp.json"),
-                new TextValuePair("Traditional to Taiwan", "t2tw.json"),
-                new TextValuePair("Traditional to Hong Kong", "t2hk.json"),
-            };
-            comboBox_Config.Items.AddRange(configs);
-            comboBox_Config.SelectedIndex = 0;
-
-            textBox_Content.MaxLength = int.MaxValue;
-            textBox_Content.ScrollBars = ScrollBars.Vertical;
-
+            ChangeLanguage(Properties.Settings.Default.Language);
             spaceBetweenBoxes = button_Convert.Left - (comboBox_Config.Left + comboBox_Config.Width);
             margin = comboBox_Config.Left;
-
-            fileListItems = new BindingList<FileListItem>();
-            dataGridView_FileList.DataSource = fileListItems;
+            Size = Properties.Settings.Default.Size;
             this.ResizeControls();
+        }
+        private void Form_Main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Properties.Settings.Default.Size = Size;
+            Properties.Settings.Default.Save();
         }
 
         private void button_Convert_Click(object sender, EventArgs e)
@@ -154,6 +132,57 @@ namespace OpenCC_GUI
             {
                 return this.Text;
             }
+        }
+
+        private void ChangeLanguage(string lang)
+        {
+            Properties.Settings.Default.Language = lang;
+            Properties.Settings.Default.Save();
+
+            Localizer.InitLocalizedResource(lang);
+
+            TextValuePair[] configs = new TextValuePair[]
+            {
+                new TextValuePair("s2t".Localize(), "s2t.json"),
+                new TextValuePair("t2s".Localize(), "t2s.json"),
+                new TextValuePair("s2hk".Localize(), "s2hk.json"),
+                new TextValuePair("s2tw".Localize(), "s2tw.json"),
+                new TextValuePair("s2twp".Localize(), "s2twp.json"),
+                new TextValuePair("hk2s".Localize(), "hk2s.json"),
+                new TextValuePair("tw2s".Localize(), "tw2s.json"),
+                new TextValuePair("tw2sp".Localize(), "tw2sp.json"),
+                new TextValuePair("t2tw".Localize(), "t2tw.json"),
+                new TextValuePair("t2hk".Localize(), "t2hk.json"),
+            };
+            var origIndex = comboBox_Config.SelectedIndex;
+            comboBox_Config.Items.Clear();
+            comboBox_Config.Items.AddRange(configs);
+            comboBox_Config.SelectedIndex = origIndex == -1 ? 0 : origIndex;
+
+            fileToolStripMenuItem.Text = "File".Localize();
+            loadToolStripMenuItem.Text = "Load".Localize();
+            saveToolStripMenuItem.Text = "Save".Localize();
+            convertTextToolStripMenuItem.Text = "ConvertText".Localize();
+            convertFilesToolStripMenuItem.Text = "ConvertFiles".Localize();
+            exitToolStripMenuItem.Text = "Exit".Localize();
+
+            editToolStripMenuItem.Text = "Edit".Localize();
+            undoToolStripMenuItem.Text = "Undo".Localize();
+            clearToolStripMenuItem.Text = "Clear".Localize();
+            cutToolStripMenuItem.Text = "Cut".Localize();
+            copyToolStripMenuItem.Text = "Copy".Localize();
+            pasteToolStripMenuItem.Text = "Paste".Localize();
+            deleteToolStripMenuItem.Text = "Delete".Localize();
+            selectAllToolStripMenuItem.Text = "SelectAll".Localize();
+
+            languageToolStripMenuItem.Text = "Language".Localize();
+
+            button_Convert.Text = "Convert".Localize();
+            button_Select.Text = "SelectFiles".Localize();
+            button_Clear.Text = "Clear".Localize();
+
+            dataGridView_FileList.Columns["FileName"].HeaderText = "FileName".Localize();
+            dataGridView_FileList.Columns["ErrorMessage"].HeaderText = "ErrorMessage".Localize();
         }
     }
 }

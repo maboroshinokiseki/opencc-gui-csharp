@@ -128,5 +128,20 @@
         {
             textBox_Content.SelectAll();
         }
+
+        private void englishToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeLanguage("en");
+        }
+
+        private void simplifiedChineseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeLanguage("chs");
+        }
+
+        private void traditionalChineseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeLanguage("cht");
+        }
     }
 }
