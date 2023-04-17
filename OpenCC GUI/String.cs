@@ -24,6 +24,15 @@ namespace OpenCC_GUI
     {
         public static int Strlen(IntPtr ptr)
         {
+            //Make sure the pointer is aligned
+            for (IntPtr orig_ptr = ptr; ptr.ToInt64() % 8 != 0; ptr += 1)
+            {
+                if (Marshal.ReadByte(ptr) == '\0')
+                {
+                    return (int)(ptr.ToInt64() - orig_ptr.ToInt64());
+                }
+            }
+
             //Represent 0x8080808080808080UL in long
             long himagic = -0x7F7F7F7F7F7F7F80L;
             long lomagic = 0x0101010101010101L;
